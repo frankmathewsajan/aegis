@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="com.aegis.app" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>Aegis</name>
+    <description>Aegis AI mobile app</description>
+    <author email="dev@qualie--aegis-weather.asia-southeast1.hosted.app" href="https://qualie--aegis-weather.asia-southeast1.hosted.app">
+        Aegis Team
+    </author>
+    <hook type="after_prepare" src="hooks/after_prepare/fix_gradle_versions.js" />
+
+    <content src="index.html" />
+
+    <!-- Keep all navigation INSIDE the WebView (never open system browser) -->
+    <allow-navigation href="*" />
+
+    <!-- Only tel: and mailto: should open system apps -->
+    <allow-intent href="tel:*" />
+    <allow-intent href="mailto:*" />
+
+    <!-- Android specific preferences -->
+    <preference name="AndroidLaunchMode" value="singleTop" />
+    <preference name="android-minSdkVersion" value="22" />
+    <preference name="android-targetSdkVersion" value="35" />
+    <preference name="Fullscreen" value="false" />
+    <preference name="loadUrlTimeoutValue" value="60000" />
+    <preference name="SplashScreenDelay" value="0" />
+    <preference name="MixedContentMode" value="0" />
+    <preference name="GradlePluginKotlinEnabled" value="true" />
+</widget>

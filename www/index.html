@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:;" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="msapplication-tap-highlight" content="no" />
+    <title>Aegis</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0f; }
+
+        /* Splash screen */
+        #splash {
+            position: fixed; inset: 0;
+            background: #0a0a0f;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            z-index: 30;
+            transition: opacity 0.4s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #fff;
+        }
+        #splash.hidden { opacity: 0; pointer-events: none; }
+        .spinner {
+            width: 48px; height: 48px;
+            border: 3px solid rgba(255,255,255,0.15);
+            border-top-color: #6c63ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 20px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #splash h1 { font-size: 30px; font-weight: 700; letter-spacing: 4px; margin-bottom: 8px; }
+        #splash p  { font-size: 13px; color: rgba(255,255,255,0.4); }
+
+        /* Full-screen iframe */
+        #frame { position: fixed; inset: 0; width: 100%; height: 100%; border: none; }
+
+        /* Pull-to-refresh bar */
+        #ptr {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 56px;
+            background: #0a0a0f;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 20;
+            transform: translateY(-100%);
+            transition: transform 0.25s ease;
+        }
+        #ptr.pulling { transform: translateY(0); transition: none; }
+        #ptr.releasing { transform: translateY(0); }
+        #ptr .ptr-spinner {
+            width: 26px; height: 26px;
+            border: 2px solid rgba(255,255,255,0.15);
+            border-top-color: #6c63ff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        #ptr .ptr-arrow {
+            width: 22px; height: 22px;
+            border-left: 2px solid #6c63ff;
+            border-bottom: 2px solid #6c63ff;
+            transform: rotate(-45deg);
+            transition: transform 0.2s;
+        }
+        #ptr.ready .ptr-arrow { transform: rotate(135deg); }
+
+        /* Transparent touch-capture strip at top (sits above iframe) */
+        #touch-strip {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: 32px;
+            z-index: 25;
+            background: transparent;
+        }
+
+        /* Location-off overlay */
+        #loc-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: #0a0a0f;
+            z-index: 40;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #fff;
+            padding: 32px;
+            text-align: center;
+        }
+        #loc-overlay.visible { display: flex; }
+        #loc-overlay .loc-icon {
+            font-size: 56px;
+            margin-bottom: 24px;
+        }
+        #loc-overlay h2 {
+            font-size: 22px; font-weight: 700;
+            margin-bottom: 12px;
+        }
+        #loc-overlay p {
+            font-size: 14px;
+            color: rgba(255,255,255,0.55);
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+        #loc-overlay button {
+            background: #6c63ff;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            padding: 14px 36px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="splash">
+        <div class="spinner"></div>
+        <h1>AEGIS</h1>
+        <p>Loading…</p>
+    </div>
+
+    <div id="loc-overlay">
+        <div class="loc-icon">📍</div>
+        <h2>Location is Off</h2>
+        <p>Aegis needs your device location to work.<br>Please enable Location Services and come back.</p>
+        <button id="loc-btn">Open Location Settings</button>
+    </div>
+
+    <div id="ptr"><div class="ptr-arrow"></div></div>
+    <div id="touch-strip"></div>
+    <iframe id="frame" src="about:blank" allowfullscreen
+            allow="microphone *; camera *; geolocation *; autoplay *; fullscreen *"></iframe>
+
+    <script src="cordova.js"></script>
+    <script>
+    (function () {
+        var TARGET = 'https://qualie--aegis-weather.asia-southeast1.hosted.app/listen';
+        var frame   = document.getElementById('frame');
+        var splash  = document.getElementById('splash');
+        var ptr     = document.getElementById('ptr');
+        var strip   = document.getElementById('touch-strip');
+        var arrow   = ptr.querySelector('.ptr-arrow');
+
+        var THRESHOLD = 70;   // px of drag needed to trigger reload
+        var startY = 0, curY = 0, active = false, triggered = false;
+
+        /* ── Load ── */
+        function loadApp() {
+            splash.classList.remove('hidden');
+            ptr.className = '';
+            arrow.style.display = '';
+            frame.src = TARGET;
+        }
+
+        frame.addEventListener('load', function () {
+            if (frame.src === 'about:blank') return;
+            setTimeout(function () { splash.classList.add('hidden'); }, 300);
+        });
+
+        var locOverlay = document.getElementById('loc-overlay');
+        var locBtn     = document.getElementById('loc-btn');
+
+        /* ── Location-off overlay ── */
+        function showLocOverlay() {
+            splash.classList.add('hidden');
+            locOverlay.classList.add('visible');
+        }
+        function hideLocOverlay() {
+            locOverlay.classList.remove('visible');
+        }
+
+        locBtn.addEventListener('click', function () {
+            if (cordova.plugins && cordova.plugins.diagnostic) {
+                cordova.plugins.diagnostic.switchToLocationSettings();
+            }
+        });
+
+        /* ── Check location services (GPS toggle) ── */
+        function checkLocationThenLoad() {
+            var diag = cordova.plugins && cordova.plugins.diagnostic;
+            if (!diag) { loadApp(); return; }
+
+            diag.isLocationEnabled(function (enabled) {
+                if (enabled) {
+                    hideLocOverlay();
+                    loadApp();
+                } else {
+                    showLocOverlay();
+                }
+            }, function () {
+                // Can't determine – proceed anyway
+                loadApp();
+            });
+        }
+
+        /* Re-check when user returns from Settings */
+        document.addEventListener('resume', function () {
+            if (locOverlay.classList.contains('visible')) {
+                checkLocationThenLoad();
+            }
+        }, false);
+
+        /* ── Permission pre-request via native Android API ── */
+        function requestPermissions(done) {
+            if (!window.cordova || !cordova.plugins || !cordova.plugins.permissions) {
+                done();
+                return;
+            }
+
+            var p = cordova.plugins.permissions;
+            var needed = [
+                p.RECORD_AUDIO,
+                p.MODIFY_AUDIO_SETTINGS,
+                p.ACCESS_FINE_LOCATION,
+                p.ACCESS_COARSE_LOCATION,
+                p.CAMERA
+            ];
+
+            p.requestPermissions(needed, done, done);
+        }
+
+        if (window.cordova) {
+            document.addEventListener('deviceready', function () {
+                requestPermissions(checkLocationThenLoad);
+            }, false);
+        } else {
+            loadApp();
+        }
+
+        /* ── Pull-to-refresh (touch starts on the strip at top) ── */
+        strip.addEventListener('touchstart', function (e) {
+            startY    = e.touches[0].clientY;
+            curY      = startY;
+            active    = true;
+            triggered = false;
+            ptr.className = '';
+            arrow.style.display = '';
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function (e) {
+            if (!active) return;
+            curY = e.touches[0].clientY;
+            var dy = curY - startY;
+            if (dy <= 0) return;
+
+            ptr.classList.add('pulling');
+            // Clamp visual travel
+            var travel = Math.min(dy, THRESHOLD + 20);
+            ptr.style.transform = 'translateY(' + (travel - 56) + 'px)';
+
+            if (dy >= THRESHOLD) {
+                ptr.classList.add('ready');
+                triggered = true;
+            } else {
+                ptr.classList.remove('ready');
+                triggered = false;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', function () {
+            if (!active) return;
+            active = false;
+            ptr.style.transform = '';
+
+            if (triggered) {
+                // Show spinner while reloading
+                arrow.style.display = 'none';
+                var spinner = document.createElement('div');
+                spinner.className = 'ptr-spinner';
+                ptr.appendChild(spinner);
+                ptr.className = 'releasing';
+
+                setTimeout(function () {
+                    loadApp();
+                    ptr.removeChild(spinner);
+                }, 400);
+            } else {
+                ptr.className = '';
+            }
+            triggered = false;
+        }, { passive: true });
+    })();
+    </script>
+</body>
+</html>
