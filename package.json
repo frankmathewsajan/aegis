@@ -15,7 +15,7 @@
     "ecosystem:cordova",
     "cordova-android"
   ],
-  "author": "Aegis Team",
+  "author": "Frank Mathew Sajan",
   "license": "Apache-2.0",
   "devDependencies": {
     "cordova-android": "^14.0.1",
