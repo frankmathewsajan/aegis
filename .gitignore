@@ -24,8 +24,9 @@ node_modules/
 /plugins/
 /platforms/
 
-# Signing credentials - NEVER commit to version control
-keystore/
-*.keystore
+# Signing credentials
+# Generally do not commit to version control, EXCEPT for the shared debug keystore
+keystore/*
+!keystore/debug.keystore
 *.jks
 *.p12
