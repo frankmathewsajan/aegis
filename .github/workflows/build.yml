@@ -50,6 +50,6 @@ jobs:
       with:
         tag_name: build-${{ github.run_number }}
         name: Build ${{ github.run_number }}
-        files: platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
+        files: platforms/android/app/build/outputs/apk/**/*.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
