@@ -20,6 +20,7 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 20
+        cache: 'npm'
 
     - name: Install Cordova
       run: npm install -g cordova
@@ -27,11 +28,21 @@ jobs:
     - name: Install project dependencies
       run: npm install
 
-    - name: Install Java (required for Android build)
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: temurin
         java-version: 17
+
+    - name: Cache Gradle dependencies
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
 
     - name: Install Android SDK
       uses: android-actions/setup-android@v3
@@ -44,6 +55,9 @@ jobs:
 
     - name: Build Release APK
       run: cordova build android --release
+
+    - name: Show APK output
+      run: ls -R platforms/android/app/build/outputs
 
     - name: Create GitHub Release and upload APK
       uses: softprops/action-gh-release@v2
