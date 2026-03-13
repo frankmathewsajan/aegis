@@ -211,16 +211,26 @@
             }
 
             var p = cordova.plugins.permissions;
-            var needed = [
+
+            // POST_NOTIFICATIONS (Android 13+ / API 33+) MUST be requested first
+            // and on its own — batching it with other permissions causes Android to
+            // silently skip showing the notification permission dialog.
+            var notifPerm = p.POST_NOTIFICATIONS || "android.permission.POST_NOTIFICATIONS";
+
+            var otherPerms = [
                 p.RECORD_AUDIO,
                 p.MODIFY_AUDIO_SETTINGS,
                 p.ACCESS_FINE_LOCATION,
                 p.ACCESS_COARSE_LOCATION,
-                p.CAMERA,
-                "android.permission.POST_NOTIFICATIONS"
+                p.CAMERA
             ];
 
-            p.requestPermissions(needed, done, done);
+            function requestOthers() {
+                p.requestPermissions(otherPerms, done, done);
+            }
+
+            // First ask for notification permission alone, then request the rest
+            p.requestPermission(notifPerm, requestOthers, requestOthers);
         }
 
         if (window.cordova) {

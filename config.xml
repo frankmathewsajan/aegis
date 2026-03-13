@@ -28,10 +28,12 @@
     <preference name="GradlePluginKotlinEnabled" value="true" />
 
     <platform name="android">
-        <config-file target="AndroidManifest.xml" parent="/*">
+        <config-file target="AndroidManifest.xml" parent="/manifest">
             <queries>
                 <package android:name="com.whatsapp" />
             </queries>
+        </config-file>
+        <config-file target="AndroidManifest.xml" parent="/manifest">
             <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
         </config-file>
         <preference name="AndroidWindowSplashScreenBackground" value="#F5F5DC" />
