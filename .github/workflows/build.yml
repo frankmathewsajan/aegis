@@ -2,31 +2,54 @@ name: Build and Release APK
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+
+permissions:
+  contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
-    - uses: actions/setup-node@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
       with:
         node-version: 20
 
-    - run: npm install -g cordova
+    - name: Install Cordova
+      run: npm install -g cordova
 
-    - run: npm install
+    - name: Install project dependencies
+      run: npm install
 
-    - run: cordova platform add android
+    - name: Install Java (required for Android build)
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: 17
 
-    - run: cordova build android
+    - name: Install Android SDK
+      uses: android-actions/setup-android@v3
 
-    - name: Release APK
+    - name: Prepare Cordova project
+      run: cordova prepare
+
+    - name: Clean Android build
+      run: cordova clean android
+
+    - name: Build Release APK
+      run: cordova build android --release
+
+    - name: Create GitHub Release and upload APK
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: v${{ github.run_number }}
-        files: platforms/android/app/build/outputs/apk/debug/app-debug.apk
+        tag_name: build-${{ github.run_number }}
+        name: Build ${{ github.run_number }}
+        files: platforms/android/app/build/outputs/apk/release/app-release-unsigned.apk
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
