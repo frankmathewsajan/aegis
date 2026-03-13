@@ -6,10 +6,12 @@
   "main": "index.js",
   "scripts": {
     "prepare": "cordova prepare android",
-    "build": "cordova prepare android && cd platforms/android && gradlew assembleDebug",
-    "build:release": "cordova prepare android && cd platforms/android && gradlew assembleRelease",
+    "build": "cordova build android --debug --buildConfig build.json",
+    "build:release": "cordova build android --release --buildConfig build.json",
     "run": "cordova run android",
-    "clean": "cd platforms/android && gradlew clean"
+    "clean": "cd platforms/android && gradlew clean",
+    "reset": "adb shell pm clear com.aegis.app",
+    "generate-debug-key": "mkdir -p keystore && keytool -genkey -v -keystore keystore/debug.keystore -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname \"CN=Android Debug,O=Android,C=US\""
   },
   "keywords": [
     "ecosystem:cordova",
