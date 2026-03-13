@@ -15,13 +15,13 @@
         /* Splash screen */
         #splash {
             position: fixed; inset: 0;
-            background: #0a0a0f;
+            background: #F5F5DC;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             z-index: 30;
             transition: opacity 0.4s ease;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: #fff;
+            color: #333;
         }
         #splash.hidden { opacity: 0; pointer-events: none; }
         .spinner {
@@ -33,8 +33,7 @@
             margin-bottom: 20px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-        #splash h1 { font-size: 30px; font-weight: 700; letter-spacing: 4px; margin-bottom: 8px; }
-        #splash p  { font-size: 13px; color: rgba(255,255,255,0.4); }
+        #splash h1 { font-size: 24px; font-weight: 700; letter-spacing: 2px; margin-bottom: 8px; text-transform: lowercase; }
 
         /* Full-screen iframe */
         #frame { position: fixed; inset: 0; width: 100%; height: 100%; border: none; }
@@ -120,8 +119,7 @@
 <body>
     <div id="splash">
         <div class="spinner"></div>
-        <h1>AEGIS</h1>
-        <p>Loading…</p>
+        <h1>loading AEGIS</h1>
     </div>
 
     <div id="loc-overlay">
@@ -218,7 +216,8 @@
                 p.MODIFY_AUDIO_SETTINGS,
                 p.ACCESS_FINE_LOCATION,
                 p.ACCESS_COARSE_LOCATION,
-                p.CAMERA
+                p.CAMERA,
+                "android.permission.POST_NOTIFICATIONS"
             ];
 
             p.requestPermissions(needed, done, done);
