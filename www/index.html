@@ -217,12 +217,15 @@
             // silently skip showing the notification permission dialog.
             var notifPerm = p.POST_NOTIFICATIONS || "android.permission.POST_NOTIFICATIONS";
 
+            // NOTE: MODIFY_AUDIO_SETTINGS is a *normal* (non-dangerous) permission —
+            // Android auto-grants it from the manifest and it must NOT be included here.
+            // Passing a non-dangerous permission to requestPermissions causes the plugin
+            // to abort the entire batch silently, so mic/camera/location never get asked.
             var otherPerms = [
-                p.RECORD_AUDIO,
-                p.MODIFY_AUDIO_SETTINGS,
-                p.ACCESS_FINE_LOCATION,
-                p.ACCESS_COARSE_LOCATION,
-                p.CAMERA
+                p.RECORD_AUDIO          || "android.permission.RECORD_AUDIO",
+                p.ACCESS_FINE_LOCATION  || "android.permission.ACCESS_FINE_LOCATION",
+                p.ACCESS_COARSE_LOCATION|| "android.permission.ACCESS_COARSE_LOCATION",
+                p.CAMERA                || "android.permission.CAMERA"
             ];
 
             function requestOthers() {
